@@ -11,3 +11,9 @@ class Shingler(shingle_len: Int, hash_bins : Int) {
     return collection.immutable.SortedSet[Int]() ++ getShingles(doc).map(getHash)
   }
 }
+
+// // Usage example:
+// var doc = "abcde"
+// var shingler = new Shingler(2, 3)
+// var shingles = shingler.getHashedShingles(doc1)
+// shingles.foreach(element => println(element))
