@@ -4,4 +4,10 @@ class SetComparator {
     var union = s1.union(s2)
     return intersection.size.toFloat/union.size.toFloat
   }
+
+   def getJaccardSim(s1 : Set[Int], s2 : Set[Int]) : Float = {
+    var intersection = s1.intersect(s2)
+    var union = s1.union(s2)
+    return intersection.size.toFloat/union.size.toFloat
+  }
 }
