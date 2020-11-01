@@ -20,3 +20,9 @@ class Hasher(max_val : Int, seed: Int, p : Int = 104729) {
     return ((a*x + b) % p) % max_val
   }
 }
+
+
+// How to create list of Hash functions
+// val max_hash_val = 10
+// val minhash_len = 7
+// val x = List.tabulate(minhash_len)(n => new Hasher(n)(max_hash_val))
