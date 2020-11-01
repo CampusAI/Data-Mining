@@ -1,8 +1,10 @@
 /* SimpleApp.scala */
 import org.apache.spark.sql.SparkSession
 
+import shingler.Shingler
 import hashing.Hasher
 import hashing.MinHasher
+import comparator.Comparator
 
 object Main {
 
@@ -20,7 +22,7 @@ object Main {
     var shingler = new Shingler(shingle_len, shingle_bins)
 
     // Minhasher
-    val minhash_len = 10
+    val minhash_len = 20
     val hashes = List.tabulate(minhash_len)(n => new Hasher(n, shingle_bins))
     val minhasher = new MinHasher(hashes)
 
