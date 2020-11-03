@@ -33,3 +33,5 @@ project/plugins/project/
 
 .vscode/
 datasets/
+
+.bsp

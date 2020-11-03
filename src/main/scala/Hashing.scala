@@ -36,7 +36,7 @@ class MinHasher(hashes : List[Hasher]) {
     *  @param set the ids from which to find the MinHash
     *  @return Minhash of the set once the permutation has been applied
     */
-  def getMinHash(hash : Hasher)(set : Set[Int]) : Int = {
+  def getMinHash(set : Set[Int])(hash : Hasher) : Int = {
     return set.map(hash.getHash).min
   }
   
