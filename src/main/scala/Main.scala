@@ -1,5 +1,7 @@
 /* SimpleApp.scala */
 import org.apache.spark.sql.SparkSession
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
 
 import shingler.Shingler
 import hashing.Hasher
@@ -8,8 +10,12 @@ import comparator.Comparator
 
 object Main {
 
-  def main() {
-    val spark = SparkSession.builder.appName("SimpleApplication").getOrCreate()
+
+  def main(args: Array[String]) {
+    val spark = SparkSession.builder.appName("SimpleApplication")
+      .config("spark.master", "local")
+      .getOrCreate()
+    spark.sparkContext.setLogLevel("ERROR")
 
     // val logFile = "/home/oleguer/Documents/p6/Data-Mining/datasets/document.txt"
     // val logData = spark.read.textFile(logFile).cache()
