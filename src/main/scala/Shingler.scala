@@ -11,40 +11,25 @@ class Shingler(shingle_len: Int, hash_bins : Int) {
     * @param doc Document which needs to be split
     * @return Set of shingles found in document
     */
-  def getShingles(doc : String) : Set[String] = {
-    return doc.grouped(shingle_len).toSet
-  }
+  def getShingles(doc : String): Set[Seq[Char]] = doc.toSeq.sliding(shingle_len).toSet
   
   /** Get hash of a string from 0 to hash_bins
     *
     * @param str String to get the hash from
     * @return Hash value
     */
-  def getHash(str : String) : Int = {
-    return math.abs(str.hashCode % hash_bins)  // TODO: Should we use our hasher?
-  }
+  def getHash(str : Seq[Char]): Int = math.abs(str.hashCode % hash_bins)
   
   /** Get a Set of hashed shingles of a document
     *
     * @param doc Document from which to get the hashed shingles
     * @return Set of hashes
     */
-  def getHashShingles(doc : String) : Set[Int] = {
-    return getShingles(doc).map(getHash)
-  }
-  
-  /** Get a sorted Set of hashed shingles of a document
-    *
-    * @param doc Document from which to get the hashed shingles
-    * @return sorted Set of hashes
-    */
-  def getOrderedHashShingles(doc : String) : scala.collection.SortedSet[Int] = {
-    return collection.immutable.SortedSet[Int]() ++ getShingles(doc).map(getHash)
-  }
+  def getHashShingles(doc : String): Array[Int] = getShingles(doc).map(getHash).toSet.toArray
 }
 
 // // Usage example:
 // var doc = "abcde"
 // var shingler = new Shingler(2, 3)
-// var shingles = shingler.getOrderedHashShingles(doc1)
+// var shingles = shingler.getHashShingles(doc1)
 // shingles.foreach(element => println(element))
