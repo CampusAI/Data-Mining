@@ -19,9 +19,7 @@ class Hasher(seed: Int, max_val : Int, p : Int = 104729) {
    *  @param x the integer from which to get the hash value
    *  @return the hash value
    */
-  def getHash(x : Int) : Int = {
-    return ((a*x + b) % p) % max_val
-  }
+  def getHash(x : Int) : Int = ((a*x + b) % p) % max_val
 }
 
 /** Implements set minhashing functionality
@@ -36,15 +34,11 @@ class MinHasher(hashes : List[Hasher]) {
     *  @param set the ids from which to find the MinHash
     *  @return Minhash of the set once the permutation has been applied
     */
-  def getMinHash(set : Set[Int])(hash : Hasher) : Int = {
-    return set.map(hash.getHash).min
-  }
+  def getMinHash(set : Seq[Int])(hasher : Hasher) : Int = set.map(hasher.getHash).min
   
   /** Get the MinHash List of the given set applying the stored hash functions (permutation)
     *  @param set the ids from which to find the MinHash List
     *  @return List of minhashes
     */
-  def getMinHashes(set: Set[Int]) : List[Int] = {
-    return hashes.map(getMinHash(set))
-  }
+  def getMinHashes(set: Seq[Int]) : Seq[Int] = hashes.map(getMinHash(set))
 }
