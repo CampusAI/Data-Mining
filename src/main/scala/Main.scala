@@ -63,7 +63,7 @@ object Main {
     df = time{ df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))}
 
     
-    df.select("id", "id_j", "jaccardSim").show()
+    df.select("id", "id_j", "jaccardSim", "approxJaccardSim").show()
     
     spark.stop()
   }
