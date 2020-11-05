@@ -9,7 +9,7 @@ import scala.util.Random
  *  @param seed the random hash parameters seed
  *  @param p prime number which should be larger than the largest inputed value
  */
-class Hasher(seed: Int, max_val : Int, p : Int = 104729) {
+class Hasher(seed: Int, max_val : Int, p : Int = 104729) extends Serializable {
   // https://stackoverflow.com/questions/19701052/how-many-hash-functions-are-required-in-a-minhash-algorithm
   private val random_generator = new scala.util.Random(seed)
   val a = 1 + 2*random_generator.nextInt((p-2)/2) // a odd in [1, p-1]
@@ -27,7 +27,7 @@ class Hasher(seed: Int, max_val : Int, p : Int = 104729) {
  *  @constructor store the hashes
  *  @param hashes the list of hash functions to use (random permutations)
  */
-class MinHasher(hashes : List[Hasher]) {
+class MinHasher(hashes : List[Hasher]) extends Serializable {
 
   /** Get the MinHash of a set applying the provided hash function (permutation)
     *  @param hasher the hash function used to permute the set ids

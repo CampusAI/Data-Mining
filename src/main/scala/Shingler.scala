@@ -5,7 +5,7 @@ package shingler
   * @param shingle_len the length (e.g. in characters) in which to split the document
   * @param hash_bins the number of bins into which to map the shingle hashes
   */
-class Shingler(shingle_len: Int, hash_bins : Int) {
+class Shingler(shingle_len: Int, hash_bins : Int) extends Serializable {
 
   /** Split document into shingles
     * @param doc Document which needs to be split
