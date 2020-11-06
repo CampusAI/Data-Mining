@@ -74,9 +74,6 @@ object Main {
       arrays_zip(col("ls_hashes"), col("ls_hashes2")), x => x("ls_hashes") === x("ls_hashes2")
     ))
 
-    df.select("id", "id_j", "ls_hashes", "ls_hashes2", "lsh_match").show()
-    exit(0)
-
     // Real Distance
     val jaccardSimUDF = udf(
       (s1: Seq[Int], s2: Seq[Int]) => (s1.intersect(s2).toSet.size.toFloat )/ (s1 ++ s2).toSet.size.toFloat
