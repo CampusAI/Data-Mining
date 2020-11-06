@@ -1,11 +1,10 @@
 /* SimpleApp.scala */
-import System.nanoTime
+import System.{exit, nanoTime}
 
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
-import shingler.Shingler
+import org.apache.spark.sql.functions._
 import hashing.Hasher
 import hashing.MinHasher
 
@@ -38,23 +37,20 @@ object Main {
     var df = docs.toDF("text")
     df = df.withColumn("id", monotonically_increasing_id())
 
-
     // Shingler
     val shingle_len = 5
-    val shingle_bins = 999999999
-    val shingler = new Shingler(shingle_len, shingle_bins)
 
     // Minhasher
     val minhash_len = 100
+    val shingle_bins = 999999999
     val hashes = List.tabulate(minhash_len)(n => new Hasher(n, shingle_bins))
     val minhasher = new MinHasher(hashes)
 
     // Compute Hashed Shingles
-    val hashShinglesUDF = udf[Seq[Int], String](shingler.getHashShingles)
-
-    df = df.withColumn("hashed_shingles", hashShinglesUDF('text))
-
-    df = df.withColumn("id", monotonically_increasing_id())
+    df = df.withColumn("tmp", array_repeat($"text", length($"text") - shingle_len + 1))
+    val shingles_expr = "transform(tmp,(x,i) -> substring(x from i+1 for " + shingle_len + "))"
+    df = df.withColumn("shingles", expr(shingles_expr))
+    df = df.withColumn("hashed_shingles", array_distinct(transform($"shingles", (x)=> hash(x))))
 
     // Compute Minhashes
     val minhasherUDF = udf[Seq[Int], Seq[Int]](minhasher.getMinHashes)
@@ -63,28 +59,22 @@ object Main {
     // Cross all combinations
     df = df.crossJoin(
       df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
-        .withColumnRenamed("id", "id_j")
+        .withColumnRenamed("id", "id2")
         .withColumnRenamed("minhashes", "minhashes2")
     )
 
-
     // Real Distance
-    val jaccardSimUDF = udf(
-      (s1: Seq[Int], s2: Seq[Int]) => (s1.intersect(s2).toSet.size.toFloat )/ (s1 ++ s2).toSet.size.toFloat
-    )
-    println("Real Jaccard distance:")
-    df = time{ df.withColumn("jaccardSim", jaccardSimUDF($"hashed_shingles", $"hashed_shingles2")) }
+    df = df.withColumn("JaccardSim",
+                   size(array_intersect($"hashed_shingles", $"hashed_shingles2"))/
+                   size(array_union($"hashed_shingles", $"hashed_shingles2")))
 
-    // Aprox distance
+    // Approx distance
     val compareSignaturesUDF = udf(
       (s1: Seq[Int], s2: Seq[Int]) => s1.zip(s2).count({case (x,y) => x == y}).toFloat / s1.size.toFloat
     )
-
-    println("Comparing signatures:")
-    df = time{ df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))}
+    df = df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))
     
-    df.select("id", "id_j", "jaccardSim", "approxJaccardSim").show()
-    
+    df.select("id", "id2", "jaccardSim", "approxJaccardSim").show()
     spark.stop()
   }
 }
