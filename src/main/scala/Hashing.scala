@@ -10,7 +10,7 @@ import scala.util.Random
  *  @param seed the random hash parameters seed
  *  @param p prime number which should be larger than the largest inputed value
  */
-class Hasher(seed: Int, max_val : Int, p : Int = 104729) extends Serializable {
+class Hasher(seed: Int, p : Int = 2147483647) extends Serializable {
   // https://stackoverflow.com/questions/19701052/how-many-hash-functions-are-required-in-a-minhash-algorithm
   private val random_generator = new scala.util.Random(seed)
   val a = 1 + 2*random_generator.nextInt((p-2)/2) // a odd in [1, p-1]
@@ -20,7 +20,7 @@ class Hasher(seed: Int, max_val : Int, p : Int = 104729) extends Serializable {
    *  @param x the integer from which to get the hash value
    *  @return the hash value
    */
-  def getHash(x : Int) : Int = ((a*x + b) % p) % max_val
+  def getHash(x : Int) : Int = ((a*x.hashCode() + b) % p)
 }
 
 /** Implements set minhashing functionality
@@ -64,6 +64,6 @@ class LSH(b: Int) extends Serializable {
    * @return A sequence of hashes of length b.
    */
   def hashBands(signature: Seq[Int]): Seq[Int] = signature
-    .grouped(ceil(signature.length.toDouble / b).toInt).toSeq
+    .grouped(signature.length / b).toSeq
     .flatMap(band => Seq(hashArray(band)))
 }
