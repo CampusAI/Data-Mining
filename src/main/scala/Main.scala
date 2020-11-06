@@ -3,8 +3,8 @@ import System.{exit, nanoTime}
 
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{array_repeat, desc, expr, hash, length, monotonically_increasing_id, transform, udf}
+import org.apache.spark.sql.{Column, SparkSession}
+import org.apache.spark.sql.functions.{array_repeat, arrays_zip, col, count, desc, exists, expr, hash, length, monotonically_increasing_id, transform, udf}
 import shingler.Shingler
 import hashing.Hasher
 import hashing.MinHasher
@@ -60,8 +60,11 @@ object Main {
       df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
         .withColumnRenamed("id", "id_j")
         .withColumnRenamed("minhashes", "minhashes2")
+    ).filter($"id" < $"id_j").withColumn(
+      "lsh_match", exists(
+        arrays_zip(col("minhashes"), col("minhashes2")), x => x("minhashes") === x("minhashes2")
+      )
     )
-
 
     // Real Distance
     val jaccardSimUDF = udf(
