@@ -1,5 +1,6 @@
 package hashing
 
+import scala.math.ceil
 import scala.util.Random
 
 /** Represents an element of a Family of Hash function
@@ -41,4 +42,28 @@ class MinHasher(hashes : List[Hasher]) extends Serializable {
     *  @return List of minhashes
     */
   def getMinHashes(set: Seq[Int]) : Seq[Int] = hashes.map(getMinHash(set))
+}
+
+/** Locally Sensitive Hashing class.
+ *  Divide the minhash signatures in b bands of size r and hash each of the bands.
+ *
+ * @param b Number of bands in which the minhash signatures are divided.
+ */
+class LSH(b: Int) extends Serializable {
+
+  /** Hash an integer array by accumulating the Int.hashCode function.
+   *
+   * @param array Sequence of integers.
+   * @return Int hash.
+   */
+  def hashArray(array: Seq[Int]): Int = array.foldLeft(0)((tot, e) => (tot+e).hashCode())
+
+  /** Perform LSH on the given minhash signature.
+   *
+   * @param signature Sequence of Int containing the minhash signature.
+   * @return A sequence of hashes of length b.
+   */
+  def hashBands(signature: Seq[Int]): Seq[Int] = signature
+    .grouped(ceil(signature.length.toDouble / b).toInt).toSeq
+    .flatMap(band => Seq(hashArray(band)))
 }
