@@ -5,7 +5,6 @@ import org.apache.log4j.Level
 import org.apache.log4j.Logger
 import org.apache.spark.sql.{Column, SparkSession}
 import org.apache.spark.sql.functions.{array_repeat, arrays_zip, col, count, desc, exists, expr, hash, length, monotonically_increasing_id, transform, udf}
-import shingler.Shingler
 import hashing.{Hasher, MinHasher, LSH}
 
 object Main {
@@ -18,71 +17,80 @@ object Main {
       result
   }
 
-  def main(args: Array[String]) {
+  def main() {
     val spark = SparkSession.builder.appName("SimpleApplication")
-      .config("spark.master", "local")
+      .config("spark.master", "local[4]")
       .getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
     import spark.implicits._
-
-    // val docs = Seq(
-    //   "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/a9000903.txt",
-    //   "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/a9000907.txt",
-    //   "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/a9000915.txt",
-    //   "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/a9000921.txt",
-    //   "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/a9000925.txt",
-    // )
-    // var df = spark.read.option("wholetext", true).text(docs: _*).toDF("text")
-    val docs = Seq("adsdknc", "fkjdnfjfv")
-    var df = docs.toDF("text")
+    val docs = Seq(
+      // "/home/fedetask/Downloads/text_dataset/Part1/awards_1990/awd_1990_00/*"
+      "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
+    )
+    var df = spark.read.option("wholetext", true)
+      .text(docs: _*).toDF("text")
     df = df.withColumn("id", monotonically_increasing_id())
 
-    // Shingler
-    val shingle_len = 5
+    time {
+      // Shingler
+      val shingle_len = 5
+      // Minhasher
+      val minhash_len = 100
+      val hashes = List.tabulate(minhash_len)(n => new Hasher(n))
+      val minhasher = new MinHasher(hashes)
+      // LSH
+      val bands = 10
+      val lshasher = new LSH(bands)
+      val similarity_threshold = 0.8
 
-    // Minhasher
-    val minhash_len = 100
-    val shingle_bins = 999999999
-    val hashes = List.tabulate(minhash_len)(n => new Hasher(n, shingle_bins))
-    val minhasher = new MinHasher(hashes)
-    // LSH
-    val bands = 10
-    val lshasher = new LSH(bands)
+      // Compute Hashed Shingles
+      df = df.withColumn("tmp", array_repeat($"text", length($"text") - shingle_len + 1))
+      val shingles_expr = "transform(tmp,(x,i) -> substring(x from i+1 for " + shingle_len + "))"
+      df = df.withColumn("shingles", expr(shingles_expr))
+      df = df.withColumn("hashed_shingles", transform($"shingles", (x) => hash(x)))
 
-    // Compute Hashed Shingles
-    df = df.withColumn("tmp", array_repeat($"text", length($"text") - shingle_len + 1))
-    val shingles_expr = "transform(tmp,(x,i) -> substring(x from i+1 for " + shingle_len + "))"
-    df = df.withColumn("shingles", expr(shingles_expr))
-    df = df.withColumn("hashed_shingles", array_distinct(transform($"shingles", (x)=> hash(x))))
+      df = df.withColumn("id", monotonically_increasing_id())
 
-    // Compute Minhashes
-    val minhasherUDF = udf[Seq[Int], Seq[Int]](minhasher.getMinHashes)
-    df = df.withColumn("minhashes", minhasherUDF('hashed_shingles))
+      // Compute Minhashes
+      val minhasherUDF = udf[Seq[Int], Seq[Int]](minhasher.getMinHashes)
+      df = df.withColumn("minhashes", minhasherUDF('hashed_shingles))
 
-    // Compute LSH
-    val lhasherUDF = udf[Seq[Int], Seq[Int]](lshasher.hashBands)
-    df = df.withColumn("ls_hashes", lhasherUDF($"minhashes"))
+      // Compute LSH
+      val lhasherUDF = udf[Seq[Int], Seq[Int]](lshasher.hashBands)
+      df = df.withColumn("ls_hashes", lhasherUDF($"minhashes"))
 
-    // Cross all combinations
-    df = df.crossJoin(
-      df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
-        .withColumnRenamed("id", "id2")
-        .withColumnRenamed("minhashes", "minhashes2")
-        .withColumnRenamed("ls_hashes", "ls_hashes2")
-    ).filter($"id" < $"id_j")
+      // Cross all combinations
+      df = df.crossJoin(
+        df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
+          .withColumnRenamed("id", "id_j")
+          .withColumnRenamed("minhashes", "minhashes2")
+          .withColumnRenamed("ls_hashes", "ls_hashes2")
+          .withColumnRenamed("text", "text2")
+      ).filter($"id" < $"id_j")
 
-    // Real Distance
-    df = df.withColumn("JaccardSim",
-                   size(array_intersect($"hashed_shingles", $"hashed_shingles2"))/
-                   size(array_union($"hashed_shingles", $"hashed_shingles2")))
+      // LSH matching
+      df = df.withColumn("lsh_match", exists(
+        arrays_zip(col("ls_hashes"), col("ls_hashes2")), x => x("ls_hashes") === x("ls_hashes2")
+      )).filter($"lsh_match" === true)
+      println("Matched by LSH: " + df.count())
 
-    // Approx distance
-    val compareSignaturesUDF = udf(
-      (s1: Seq[Int], s2: Seq[Int]) => s1.zip(s2).count({case (x,y) => x == y}).toFloat / s1.size.toFloat
-    )
-    df = df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))
-    
-    df.select("id", "id2", "jaccardSim", "approxJaccardSim").show()
+      // Aprox distance
+      val compareSignaturesUDF = udf(
+        (s1: Seq[Int], s2: Seq[Int]) => s1.zip(s2).count({ case (x, y) => x == y }).toFloat / s1.size.toFloat
+      )
+      df = df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))
+      // Clean by false positives
+      df = df.filter($"approxJaccardSim" > similarity_threshold)
+      println("Matched by approximate Jac similarity: " + df.count())
+
+      // Real distance
+      val jaccardSimUDF = udf(
+        (s1: Seq[Int], s2: Seq[Int]) => (s1.intersect(s2).toSet.size.toFloat) / (s1 ++ s2).toSet.size.toFloat
+      )
+      df = df.withColumn("jaccardSim", jaccardSimUDF($"hashed_shingles", $"hashed_shingles2"))
+      println("True positives: " + df.count())
+
+    }
     spark.stop()
   }
 }
