@@ -3,10 +3,10 @@ import System.{exit, nanoTime}
 
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
-import hashing.Hasher
-import hashing.MinHasher
+import org.apache.spark.sql.{Column, SparkSession}
+import org.apache.spark.sql.functions.{array_repeat, arrays_zip, col, count, desc, exists, expr, hash, length, monotonically_increasing_id, transform, udf}
+import shingler.Shingler
+import hashing.{Hasher, MinHasher, LSH}
 
 object Main {
 
@@ -45,6 +45,9 @@ object Main {
     val shingle_bins = 999999999
     val hashes = List.tabulate(minhash_len)(n => new Hasher(n, shingle_bins))
     val minhasher = new MinHasher(hashes)
+    // LSH
+    val bands = 10
+    val lshasher = new LSH(bands)
 
     // Compute Hashed Shingles
     df = df.withColumn("tmp", array_repeat($"text", length($"text") - shingle_len + 1))
@@ -56,12 +59,17 @@ object Main {
     val minhasherUDF = udf[Seq[Int], Seq[Int]](minhasher.getMinHashes)
     df = df.withColumn("minhashes", minhasherUDF('hashed_shingles))
 
+    // Compute LSH
+    val lhasherUDF = udf[Seq[Int], Seq[Int]](lshasher.hashBands)
+    df = df.withColumn("ls_hashes", lhasherUDF($"minhashes"))
+
     // Cross all combinations
     df = df.crossJoin(
       df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
         .withColumnRenamed("id", "id2")
         .withColumnRenamed("minhashes", "minhashes2")
-    )
+        .withColumnRenamed("ls_hashes", "ls_hashes2")
+    ).filter($"id" < $"id_j")
 
     // Real Distance
     df = df.withColumn("JaccardSim",
