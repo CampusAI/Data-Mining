@@ -60,7 +60,9 @@ object Main {
       df.withColumnRenamed("hashed_shingles", "hashed_shingles2")
         .withColumnRenamed("id", "id_j")
         .withColumnRenamed("minhashes", "minhashes2")
-    ).filter($"id" < $"id_j").withColumn(
+    ).filter($"id" < $"id_j")
+
+    df = df.withColumn(
       "lsh_match", exists(
         arrays_zip(col("minhashes"), col("minhashes2")), x => x("minhashes") === x("minhashes2")
       )
