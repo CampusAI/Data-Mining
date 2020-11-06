@@ -56,7 +56,7 @@ class LSH(b: Int) extends Serializable {
    * @param array Sequence of integers.
    * @return Int hash.
    */
-  def hashArray(array: Seq[Int]): Int = array.foldLeft(0)((tot, e) => (tot+e).hashCode())
+  def hashArray(array: Seq[Int]): Int = array.foldLeft(0)((total, next_elem) => (total + next_elem).hashCode())
 
   /** Perform LSH on the given minhash signature.
    *
