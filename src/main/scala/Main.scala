@@ -10,12 +10,18 @@ import spark.implicits._
 import hashing.{Hasher, MinHasher, LSH}
 
 object Main {
+    val minhash_len = 100
+    val shingle_len = 5
+    val bands = 10
+    val similarity_threshold = 0.8
+    val path = "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
+
 
   def time[R](block: => R): R = {
       val t0 = System.nanoTime()
       val result = block    // call-by-name
       val t1 = System.nanoTime()
-      println("Time: " + (t1 - t0) / 1000 + "ms")
+      println("Time: " + (t1 - t0).toFloat / 1000000000.0 + "s")
       result
   }
 
@@ -35,10 +41,6 @@ object Main {
   }
 
   def real() {
-    val shingle_len = 5
-    val similarity_threshold = 0.8
-    val path = "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
-
     // Start spark
     val spark = SparkSession.builder.appName("SimpleApplication").config("spark.master", "local[4]").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
@@ -64,11 +66,6 @@ object Main {
   }
 
   def minhashing() {
-    val minhash_len = 100
-    val shingle_len = 5
-    val similarity_threshold = 0.8
-    val path = "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
-
     // Start spark
     val spark = SparkSession.builder.appName("SimpleApplication").config("spark.master", "local[4]").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
@@ -102,12 +99,6 @@ object Main {
   }
 
   def lhs() {
-    val minhash_len = 100
-    val shingle_len = 5
-    val bands = 10
-    val similarity_threshold = 0.8
-    val path = "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
-
     // Start spark
     val spark = SparkSession.builder.appName("SimpleApplication").config("spark.master", "local[4]").getOrCreate()
     spark.sparkContext.setLogLevel("ERROR")
