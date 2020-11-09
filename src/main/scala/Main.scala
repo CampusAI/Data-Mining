@@ -1,10 +1,11 @@
 /* SimpleApp.scala */
 import System.{exit, nanoTime}
+import org.apache.spark.mllib.evaluation.RegressionMetrics
 
 import org.apache.log4j.Level
 import org.apache.log4j.Logger
 import org.apache.spark.sql.{Column, SparkSession, DataFrame}
-import org.apache.spark.sql.functions.{array_repeat, arrays_zip, col, count, desc, exists, expr, hash, length, monotonically_increasing_id, transform, udf}
+import org.apache.spark.sql.functions.{array_repeat, arrays_zip, avg, col, count, desc, exists, expr, hash, length, monotonically_increasing_id, transform, udf}
 import spark.implicits._
 
 import hashing.{Hasher, MinHasher, LSH}
@@ -12,7 +13,7 @@ import hashing.{Hasher, MinHasher, LSH}
 object Main {
     val minhash_len = 100
     val shingle_len = 5
-    val bands = 10
+    val bands = 5
     val similarity_threshold = 0.8
     val path = "/home/oleguer/Documents/p6/Data-Mining/datasets/Part1/awards_1990/awd_1990_00/*"
 
@@ -92,8 +93,31 @@ object Main {
         )
         df = df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))
 
-        df = df.filter($"approxJaccardSim" > similarity_threshold)
-        println("Matched by approximate Jac similarity: " + df.count())
+        // Real distance
+        val jaccardSimUDF = udf(
+          (s1: Seq[Int], s2: Seq[Int]) => (s1.intersect(s2).toSet.size.toFloat) / (s1 ++ s2).toSet.size.toFloat
+        )
+        df = df.withColumn("jaccardSim", jaccardSimUDF($"hashed_shingles", $"hashed_shingles2"))
+
+        //Error
+        // Get predictions
+        // val valuesAndPreds = data.map{ point =>
+        //   val prediction = model.predict(point.features)
+        //   (prediction, point.label)
+        // }
+        // Instantiate metrics object
+        // val metrics = new RegressionMetrics(df.select("jaccardSim", "approxJaccardSim").rdd.map(x => (x(0).asInstanceOf[Float], x(1).asInstanceOf[Float])))
+        // println(s"MSE = ${metrics.meanSquaredError}")
+        val mseUDF = udf(
+          (approx: Float, real: Float) => (approx - real)^2
+        )
+        df = df.withColumn("mse", mseUDF($"approxJaccardSim", $"jaccardSim"))
+        df.select(avg($"mse")).show()
+        
+        // df = df.withColumn("MSE", metrics.meanSquaredError)
+
+        // df = df.filter($"approxJaccardSim" > similarity_threshold)
+        // println("Matched by approximate Jac similarity: " + df.count())
     }
     spark.stop()
   }
