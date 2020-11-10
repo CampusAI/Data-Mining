@@ -32,7 +32,7 @@ project/plugins/project/
 **/*.iml
 
 .vscode/
-datasets/
+*/datasets/
 
 .bsp
 .bloop/

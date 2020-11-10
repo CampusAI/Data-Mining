@@ -87,37 +87,13 @@ object Main {
             .withColumnRenamed("minhashes", "minhashes2")
             .withColumnRenamed("text", "text2")).filter($"id" < $"id_j")
 
-        // Aprox distance
+        // Approx distance
         val compareSignaturesUDF = udf(
           (s1: Seq[Int], s2: Seq[Int]) => s1.zip(s2).count({ case (x, y) => x == y }).toFloat / s1.size.toFloat
         )
         df = df.withColumn("approxJaccardSim", compareSignaturesUDF($"minhashes", $"minhashes2"))
-
-        // Real distance
-        val jaccardSimUDF = udf(
-          (s1: Seq[Int], s2: Seq[Int]) => (s1.intersect(s2).toSet.size.toFloat) / (s1 ++ s2).toSet.size.toFloat
-        )
-        df = df.withColumn("jaccardSim", jaccardSimUDF($"hashed_shingles", $"hashed_shingles2"))
-
-        //Error
-        // Get predictions
-        // val valuesAndPreds = data.map{ point =>
-        //   val prediction = model.predict(point.features)
-        //   (prediction, point.label)
-        // }
-        // Instantiate metrics object
-        // val metrics = new RegressionMetrics(df.select("jaccardSim", "approxJaccardSim").rdd.map(x => (x(0).asInstanceOf[Float], x(1).asInstanceOf[Float])))
-        // println(s"MSE = ${metrics.meanSquaredError}")
-        val mseUDF = udf(
-          (approx: Float, real: Float) => (approx - real)^2
-        )
-        df = df.withColumn("mse", mseUDF($"approxJaccardSim", $"jaccardSim"))
-        df.select(avg($"mse")).show()
-        
-        // df = df.withColumn("MSE", metrics.meanSquaredError)
-
-        // df = df.filter($"approxJaccardSim" > similarity_threshold)
-        // println("Matched by approximate Jac similarity: " + df.count())
+        df = df.filter($"approxJaccardSim" > similarity_threshold)
+        println("Matched by approximate Jac similarity: " + df.count())
     }
     spark.stop()
   }
