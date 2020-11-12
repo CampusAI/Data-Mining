@@ -32,8 +32,15 @@ project/plugins/project/
 **/*.iml
 
 .vscode/
-datasets/
+*/datasets/
 
 .bsp
 .bloop/
 .metals/
+
+Similar-Items/*.sbt
+Similar-Items/project/*.sbt
+Similar-Items/project/project/*.sbt
+Similar-Items/*/*.sbt
+Similar-Items/*/*/*.sbt
+project
