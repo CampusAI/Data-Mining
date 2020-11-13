@@ -92,6 +92,7 @@ object Main {
     }
     println(itemset_counts.length)
     for (i <- itemset_counts) i.show()
+    spark.stop()
   }
 }
 
