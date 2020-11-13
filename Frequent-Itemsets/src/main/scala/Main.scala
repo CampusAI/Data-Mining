@@ -4,9 +4,8 @@ import org.apache.spark.sql.{Column, SparkSession, DataFrame}
 import org.apache.spark.sql.functions._
 import spark.implicits._
 
-object Main {
+object Main extends Serializable {
     val s = 0.5
-
 
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
@@ -60,7 +59,7 @@ object Main {
   }
 
 
-  def main(): Unit = {
+  def freq() {
     // Start Spark
     val spark = SparkSession.builder.appName("FreqItemsets")
       .master("local[*]")
