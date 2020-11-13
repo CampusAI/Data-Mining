@@ -5,8 +5,7 @@ import org.apache.spark.sql.functions._
 import spark.implicits._
 
 object Main extends Serializable {
-    val s = 0.5
-
+  val s = 0.01
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -19,9 +18,21 @@ object Main extends Serializable {
     var data = spark.read.text(path)
       .toDF("baskets_str")
       .withColumn("baskets", split('baskets_str, " ").cast("array<int>"))
-    data
+    return data
   }
 
+  def loadFakeData() : DataFrame = {
+    var data = Seq("1 ",
+                  "1 2 ",
+                  "1 2",
+                  "3",
+                  "1 2 3 ",
+                  "1 2 ")
+                .toDF("baskets_str")
+                .withColumn("baskets", split('baskets_str, " ").cast("array<int>"))
+      data
+  }
+  
   def combo(a1: WrappedArray[Int], a2: WrappedArray[Int]): Array[Array[Int]] = {
     var a = a1.toSet
     var b = a2.toSet
@@ -46,19 +57,6 @@ object Main extends Serializable {
       .count
   }
 
-  def loadFakeData() : DataFrame = {
-    var data = Seq("1 ",
-                  "1 2 ",
-                  "1 2",
-                  "3",
-                  "1 2 3 ",
-                  "1 2 ")
-      .toDF("baskets_str")
-      .withColumn("baskets", split('baskets_str, " ").cast("array<int>"))
-      data
-  }
-
-
   def freq() {
     // Start Spark
     val spark = SparkSession.builder.appName("FreqItemsets")
@@ -66,10 +64,14 @@ object Main extends Serializable {
       .getOrCreate()
 
     // Load data
-    // val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itmes/datasets/T10I4D100K.dat"
-    // val data = loadData(path)
-    val data = loadFakeData()
+    // val data = loadFakeData()
+    val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
+    val data = loadData(path)
     val basket_count = data.count
+    println("basket_count:")
+    println(basket_count)
+    data.show()
+
 
     var itemset : DataFrame = data
                                 .select(explode('baskets))
@@ -80,7 +82,9 @@ object Main extends Serializable {
     var itemset_count : DataFrame = countCombinations(data, itemset).filter('count > s*basket_count)
     var itemset_counts = List(itemset_count)
 
-    var stop = false
+    itemset_count.show()
+
+    var stop = (itemset_count.count == 0)
     while(!stop) {
       itemset = getCombinations(itemset_count.select("itemsets"))
       itemset_count = countCombinations(data, itemset).filter('count > s*basket_count)
