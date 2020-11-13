@@ -5,7 +5,7 @@ import org.apache.spark.sql.functions._
 import spark.implicits._
 
 object Main extends Serializable {
-  val s = 0.01
+  val s = 0.03
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -64,14 +64,13 @@ object Main extends Serializable {
       .getOrCreate()
 
     // Load data
-    // val data = loadFakeData()
-    val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
-    val data = loadData(path)
+    var data = loadFakeData()
+    // val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
+    // var data = loadData(path)
     val basket_count = data.count
     println("basket_count:")
     println(basket_count)
     data.show()
-
 
     var itemset : DataFrame = data
                                 .select(explode('baskets))
@@ -82,10 +81,11 @@ object Main extends Serializable {
     var itemset_count : DataFrame = countCombinations(data, itemset).filter('count > s*basket_count)
     var itemset_counts = List(itemset_count)
 
-    itemset_count.show()
+    // itemset_count.show()
 
     var stop = (itemset_count.count == 0)
     while(!stop) {
+      println(itemset_count.count)
       itemset = getCombinations(itemset_count.select("itemsets"))
       itemset_count = countCombinations(data, itemset).filter('count > s*basket_count)
       stop = (itemset_count.count == 0)
@@ -93,8 +93,31 @@ object Main extends Serializable {
         itemset_counts = itemset_counts :+ itemset_count
       }
     }
+    data = data.crossJoin(itemset_count)
+              .where(size(array_intersect('baskets, 'itemsets)) > 0)
+              .select('baskets)
+              .dropDuplicates()
     println(itemset_counts.length)
     for (i <- itemset_counts) i.show()
+
+    val min_confidence = 0.1
+    for (k <- 1 to itemset_counts.length) {
+      itemset_counts(k)
+        .withColumnRenamed("itemsets", "itemsets_k")
+        .withColumnRenamed("count", "count_k")
+        .crossJoin(
+          itemset_counts(k-1)
+            .withColumnRenamed("itemsets", "itemsets_k_")
+            .withColumnRenamed("count", "count_k_")
+        )
+        .withColumn("dif", array_except('itemsets_k, 'itemsets_k_))
+        .where(size('dif) === 1)
+        .withColumn("confidence", 'count_k / 'count_k_)
+        .filter('confidence < min_confidence)
+        .orderBy(desc("confidence"))
+        .select('itemsets_k_, 'dif, 'confidence)
+        .show()
+    }
     spark.stop()
   }
 }
