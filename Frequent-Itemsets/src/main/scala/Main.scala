@@ -22,12 +22,16 @@ object Main extends Serializable {
   }
 
   def loadFakeData() : DataFrame = {
-    var data = Seq("1 ",
-                  "1 2 ",
+    var data = Seq("1 7 5 2",
+                  "1 5 3",
                   "1 2",
-                  "3",
-                  "1 2 3 ",
-                  "1 2 ")
+                  "6",
+                  "2 5",
+                  "4 3 5 1",
+                  "1 2 5 6",
+                  "3 5 1",
+                  "6 5",
+                  "5 2")
                 .toDF("baskets_str")
                 .withColumn("baskets", split('baskets_str, " ").cast("array<int>"))
       data
@@ -126,9 +130,3 @@ object Main extends Serializable {
     spark.stop()
   }
 }
-
-
-
-
-
-
