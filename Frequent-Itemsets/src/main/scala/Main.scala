@@ -82,12 +82,13 @@ object Main extends Serializable {
     var itemset_counts = List(itemset_count)
 
     // itemset_count.show()
-
     var stop = (itemset_count.count == 0)
+    var i = 0
     while(!stop) {
-      println(itemset_count.count)
-      itemset = getCombinations(itemset_count.select("itemsets"))
-      itemset_count = countCombinations(data, itemset).filter('count > s*basket_count)
+      println("Computing itemsets of size" + i)
+      i += 1
+      itemset = getCombinations(itemset_count.select("itemsets")).cache()
+      itemset_count = countCombinations(data, itemset).filter('count > s*basket_count).cache()
       stop = (itemset_count.count == 0)
       if (!stop) {
         itemset_counts = itemset_counts :+ itemset_count
@@ -97,7 +98,7 @@ object Main extends Serializable {
               .where(size(array_intersect('baskets, 'itemsets)) > 0)
               .select('baskets)
               .dropDuplicates()
-    println(itemset_counts.length)
+    println("Itemsets found: " + itemset_counts.length)
     for (i <- itemset_counts) i.show()
 
     val min_confidence = 0.1
