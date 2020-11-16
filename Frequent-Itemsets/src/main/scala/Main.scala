@@ -5,7 +5,7 @@ import org.apache.spark.sql.functions._
 import spark.implicits._
 
 object Main extends Serializable {
-  val s = 0.03
+  val s = 0.10
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -22,12 +22,16 @@ object Main extends Serializable {
   }
 
   def loadFakeData() : DataFrame = {
-    var data = Seq("1 ",
-                  "1 2 ",
+    var data = Seq("1 7 5 2",
+                  "1 5 3",
                   "1 2",
-                  "3",
-                  "1 2 3 ",
-                  "1 2 ")
+                  "6",
+                  "2 5",
+                  "4 3 5 1",
+                  "1 2 5 6",
+                  "3 5 1",
+                  "6 5",
+                  "5 2")
                 .toDF("baskets_str")
                 .withColumn("baskets", split('baskets_str, " ").cast("array<int>"))
       data
@@ -98,7 +102,7 @@ object Main extends Serializable {
               .select('baskets)
               .dropDuplicates()
     println(itemset_counts.length)
-    for (i <- itemset_counts) i.show()
+    for (i <- itemset_counts) i.orderBy(desc("count")).show()
 
     val min_confidence = 0.1
     for (k <- 1 to itemset_counts.length) {
@@ -121,9 +125,3 @@ object Main extends Serializable {
     spark.stop()
   }
 }
-
-
-
-
-
-
