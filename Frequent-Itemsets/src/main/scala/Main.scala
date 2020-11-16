@@ -5,7 +5,7 @@ import org.apache.spark.sql.functions._
 import spark.implicits._
 
 object Main extends Serializable {
-  val s = 0.03
+  val s = 0.01
   def time[R](block: => R): R = {
     val t0 = System.nanoTime()
     val result = block    // call-by-name
@@ -64,9 +64,9 @@ object Main extends Serializable {
       .getOrCreate()
 
     // Load data
-    var data = loadFakeData()
+    val data = loadFakeData()
     // val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
-    // var data = loadData(path)
+    // val data = loadData(path)
     val basket_count = data.count
     println("basket_count:")
     println(basket_count)
@@ -82,26 +82,30 @@ object Main extends Serializable {
     var itemset_counts = List(itemset_count)
 
     // itemset_count.show()
+    var data_tmp = data
     var stop = (itemset_count.count == 0)
     var i = 0
     while(!stop) {
-      println("Computing itemsets of size" + i)
+      println("Computing itemsets of size " + i)
       i += 1
       itemset = getCombinations(itemset_count.select("itemsets")).cache()
-      itemset_count = countCombinations(data, itemset).filter('count > s*basket_count).cache()
-      stop = (itemset_count.count == 0)
+      itemset_count = countCombinations(data_tmp, itemset).filter('count > s*basket_count).cache()
+      val count = itemset_count.count
+      println("- Number of rows: " + count)
+      stop = (count == 0)
       if (!stop) {
         itemset_counts = itemset_counts :+ itemset_count
       }
+      data_tmp = data_tmp.crossJoin(itemset_count)
+          .where(size(array_intersect('baskets, 'itemsets)) > 0)
+          .select('baskets)
+          .dropDuplicates().cache()
     }
-    data = data.crossJoin(itemset_count)
-              .where(size(array_intersect('baskets, 'itemsets)) > 0)
-              .select('baskets)
-              .dropDuplicates()
-    println("Itemsets found: " + itemset_counts.length)
-    for (i <- itemset_counts) i.show()
 
-    val min_confidence = 0.1
+    println("Itemsets found: " + itemset_counts.length)
+    for (i <- itemset_counts) i.orderBy(desc("count")).show()
+
+    val min_confidence = 0.20
     for (k <- 1 to itemset_counts.length) {
       itemset_counts(k)
         .withColumnRenamed("itemsets", "itemsets_k")
