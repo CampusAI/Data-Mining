@@ -44,3 +44,5 @@ Similar-Items/project/project/*.sbt
 Similar-Items/*/*.sbt
 Similar-Items/*/*/*.sbt
 project
+
+runs/
