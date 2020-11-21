@@ -6,13 +6,6 @@ import spark.implicits._
 
 object Main extends Serializable {
   val s = 0.01
-  def time[R](block: => R): R = {
-    val t0 = System.nanoTime()
-    val result = block    // call-by-name
-    val t1 = System.nanoTime()
-    println("Time: " + (t1 - t0).toFloat / 1000000000.0 + "s")
-    result
-  }
 
   def loadData(path: String) : DataFrame = {
     var data = spark.read.text(path)
@@ -68,14 +61,15 @@ object Main extends Serializable {
       .getOrCreate()
 
     // Load data
-    val data = loadFakeData()
-    // val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
-    // val data = loadData(path)
+    // val data = loadFakeData()
+    val path = "/home/oleguer/Documents/p6/Data-Mining/Frequent-Itemsets/datasets/T10I4D100K.dat"
+    val data = loadData(path)
     val basket_count = data.count
     println("basket_count:")
     println(basket_count)
     data.show()
 
+    // FREQUENT ITEMSETS
     var itemset : DataFrame = data
                                 .select(explode('baskets))
                                 .na.drop
@@ -85,7 +79,6 @@ object Main extends Serializable {
     var itemset_count : DataFrame = countCombinations(data, itemset).filter('count > s*basket_count)
     var itemset_counts = List(itemset_count)
 
-    // itemset_count.show()
     var data_tmp = data
     var stop = (itemset_count.count == 0)
     var i = 0
@@ -103,12 +96,13 @@ object Main extends Serializable {
       data_tmp = data_tmp.crossJoin(itemset_count)
           .where(size(array_intersect('baskets, 'itemsets)) > 0)
           .select('baskets)
-          .dropDuplicates().cache()
+          .dropDuplicates()
     }
 
     println("Itemsets found: " + itemset_counts.length)
     for (i <- itemset_counts) i.orderBy(desc("count")).show()
 
+    // ASSOCIATION RULES
     val min_confidence = 0.20
     for (k <- 1 to itemset_counts.length) {
       itemset_counts(k)
@@ -122,7 +116,7 @@ object Main extends Serializable {
         .withColumn("dif", array_except('itemsets_k, 'itemsets_k_))
         .where(size('dif) === 1)
         .withColumn("confidence", 'count_k / 'count_k_)
-        .filter('confidence < min_confidence)
+        .filter('confidence > min_confidence)
         .orderBy(desc("confidence"))
         .select('itemsets_k_, 'dif, 'confidence)
         .show()
