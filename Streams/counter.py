@@ -27,10 +27,7 @@ class Counter:
         i = int(bin_representation[:self.b], 2)  # Position
         p_plus = bin_representation[self.b:].find("1") + 1  # Leading zeros
         p_plus = self.bin_repr_len - self.b + 1 if p_plus == 0 else p_plus
-        if self.M[i] < p_plus:
-            self.M[i] = p_plus
-            return True
-        return False
+        self.M[i] = max(self.M[i], p_plus)
 
     def hash_add(self, elem):
         # Hash value
@@ -49,10 +46,15 @@ class Counter:
 
     def save(self, file):
         pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
-        np.save(file, self.M)
+        np.save(file + ".npy", self.M)
     
     def load(self, file):
-        self.M = np.load(file)
+        self.M = np.load(file + ".npy")
+
+    def __eq__(self, count):
+        """Whether two counters are equal
+        """
+        return np.array_equal(self.M, count.M)
 
 
 if __name__ == "__main__":
