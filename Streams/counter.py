@@ -27,6 +27,11 @@ class Counter:
         p_plus = self.bin_repr_len - self.b + 1 if p_plus == 0 else p_plus
         self.M[i] = max(self.M[i], p_plus)
 
+    def hash_add(self, elem):
+        # Hash value
+        hashed_elem = unpack("<IIII",md5(elem).digest())[0]
+        self.add(hashed_elem)
+
     def union(self, count):
         """Union of self and another counter (side-effects self.M)
         """
@@ -44,9 +49,7 @@ class Counter:
     def load(self, file):
         self.M = np.load(file)
 
-def jhash(x):
-    h = unpack("<IIII",md5(x).digest())[0]
-    return h
+
 
 if __name__ == "__main__":
     b = 5
@@ -58,9 +61,8 @@ if __name__ == "__main__":
 
     iterations = 100000
     for _ in range(iterations):
-        element = np.random.choice(elems)
-        hashed_elem = jhash(element)
-        counter.add(hashed_elem=hashed_elem)
+        elem = np.random.choice(elems)
+        counter.hash_add(elem=elem)
 
     print("Real diff values: ", num_dif_values)
     print("Approx diff values: ", counter.size())
