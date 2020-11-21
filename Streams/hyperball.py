@@ -1,6 +1,7 @@
 import copy
 
 import pandas as pd
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from counter import Counter
@@ -15,9 +16,10 @@ def get_file(graph_file, radius, node):
     return filename
 
 if __name__ == "__main__":
+    experiment_name = "test"
     graph_file = "datasets/citations.csv"
     graph = pd.read_csv(graph_file, sep="\t", names=['ori', 'dest'])
-    print(graph)
+    writer = SummaryWriter()
 
     nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
     
@@ -45,5 +47,6 @@ if __name__ == "__main__":
             counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
 
+    writer.close()
     # for node in nodes:
     #     print(node, ": ", counters[node].size())
