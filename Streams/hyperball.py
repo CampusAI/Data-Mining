@@ -23,10 +23,17 @@ if __name__ == "__main__":
     
     b = 5
     counters = {}
-    for node in nodes:
+    connections = {}
+    last_update = {}
+    for node in tqdm(nodes):
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
+        connections[node] = [row['dest'] for _, row in graph.loc[graph['ori'] == node].iterrows()]
+        print(node, connections[node])
+        last_update[node] = 0
+    # Free memory
+    del graph
 
     stop = False
     t = 0
@@ -35,15 +42,21 @@ if __name__ == "__main__":
         print("t: ", t)
         for node in tqdm(nodes):
             a = copy.deepcopy(counters[node])
-            for _, row in graph.loc[graph['ori'] == node].iterrows():
-                a.union(counters[row['dest']])
+            for connection in connections:
+                a.union(counters[connection])
             # print("- node:", node, ", elems:", a.size() - counters[node].size())
-            a.save(get_file(graph_file=graph_file, radius=t, node=node))
-            stop = stop and (a == counters[node])
+            counter_changed = not (a == counters[node])
+            if counter_changed:
+                last_update[node] = t + 1
+                a.save(get_file(graph_file=graph_file, radius=t, node=node))
+            stop = stop and not counter_changed
+
         # Update counters
+        print(last_update)
         for node in nodes:
-            counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
+            if last_update[node] == t + 1:
+                counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
 
-    # for node in nodes:
-    #     print(node, ": ", counters[node].size())
+    # # for node in nodes:
+    # #     print(node, ": ", counters[node].size())
