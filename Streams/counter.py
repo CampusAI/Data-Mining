@@ -1,5 +1,8 @@
+from hashlib import md5
 import numpy as np
+import random
 from scipy.integrate import quad
+from struct import unpack
 
 class Counter:
     def __init__(self, b):
@@ -7,7 +10,7 @@ class Counter:
         self.p = 2**b
         # self.M = -np.ones(self.p)*np.inf
         self.M = -np.zeros(self.p)
-        self.bin_repr_len = 8
+        self.bin_repr_len = 32
         
         # Compute alpha
         def integrand(u):
@@ -15,9 +18,7 @@ class Counter:
         self.alpha_p = (self.p*quad(integrand, 0, np.inf)[0])**-1
 
     def add(self, hashed_elem):
-        bin_representation = "{0:b}".format(hashed_elem).ljust(self.bin_repr_len, '0')
-        # a = bin_representation[:self.b]
-        # b = bin_representation[self.b:]
+        bin_representation = "{0:b}".format(hashed_elem).zfill(self.bin_repr_len)
         i = int(bin_representation[:self.b], 2)  # Position
         p_plus = bin_representation[self.b:].find("1") + 1  # Leading zeros
         p_plus = self.bin_repr_len - self.b + 1 if p_plus == 0 else p_plus
@@ -25,21 +26,25 @@ class Counter:
 
     def size(self):
         # m = self.M[self.M > -np.inf]  # Remove - infinity
-        m = self.M
-        Z = np.sum(np.power(2, -m))**-1
+        Z = np.sum(np.power(2, -self.M))**-1
         return self.alpha_p*Z*(self.p**2)
+
+def jhash(x):
+    h = unpack("<IIII",md5(x).digest())[0]
+    return h
 
 if __name__ == "__main__":
     b = 5
     counter = Counter(b=b)
 
-    num_dif_values = 1000
-    elems = list(range(num_dif_values))
-    
+    num_dif_values = 100
+    elems = np.array(list(set([random.randint(0, 2**32-1) for _ in range(num_dif_values)])), dtype=np.int32)
+    num_dif_values = len(elems)
+
     iterations = 100000
     for _ in range(iterations):
         element = np.random.choice(elems)
-        hashed_elem = hash(element)
+        hashed_elem = jhash(element)
         counter.add(hashed_elem=hashed_elem)
 
     print("Real diff values: ", num_dif_values)
