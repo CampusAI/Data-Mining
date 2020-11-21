@@ -13,7 +13,6 @@ class Counter:
     def __init__(self, b):
         self.b = b
         self.p = 2**b
-        # self.M = -np.ones(self.p)*np.inf
         self.M = np.zeros(self.p)
         self.bin_repr_len = 32
 
