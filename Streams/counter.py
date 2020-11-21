@@ -24,6 +24,11 @@ class Counter:
         p_plus = self.bin_repr_len - self.b + 1 if p_plus == 0 else p_plus
         self.M[i] = max(self.M[i], p_plus)
 
+    def union(self, count):
+        """Union of self and another counter (side-effects self.M)
+        """
+        self.M = np.maximum(self.M, count.M)
+
     def size(self):
         # m = self.M[self.M > -np.inf]  # Remove - infinity
         Z = np.sum(np.power(2, -self.M))**-1
