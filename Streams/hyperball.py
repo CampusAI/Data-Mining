@@ -1,9 +1,11 @@
 import copy
 
 import pandas as pd
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from counter import Counter
+
 
 def get_file(graph_file, radius, node):
     filename = ""
@@ -14,51 +16,48 @@ def get_file(graph_file, radius, node):
     filename += str(node)
     return filename
 
+
 if __name__ == "__main__":
-    graph_file = "datasets/citations.csv"
+    experiment_name = "test_emails"
+    # graph_file = "datasets/citations.csv"
+    # graph_file = "datasets/graph.csv"
+    graph_file = "datasets/emails.csv"
     graph = pd.read_csv(graph_file, sep="\t", names=['ori', 'dest'])
     print(graph)
+    writer = SummaryWriter()
 
     nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
-    
+    nodes_map = {}
+
     b = 5
     counters = {}
-    connections = {}
-    last_update = {}
     for node in tqdm(nodes):
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
-        # connections[node] = [row['dest'] for _, row in graph.loc[graph['ori'] == node].iterrows()]
-        # print(node, connections[node])
-        last_update[node] = 0
-    # Free memory
-    # del graph
+        nodes_map[node] = [
+            row['dest']
+            for _, row in graph.loc[graph['ori'] == node].iterrows()
+        ]
+    print(nodes_map)
 
-    stop = False
     t = 0
-    while not stop:
-        stop = True
+    while True:
         print("t: ", t)
-        for node in tqdm(nodes):
+        changed = 0
+        for node in tqdm(nodes_map):
             a = copy.deepcopy(counters[node])
-            # for connection in connections:
-            #     a.union(counters[connection])
-            for _, row in graph.loc[graph['ori'] == node].iterrows():
-                a.union(counters[row['dest']])
-            # print("- node:", node, ", elems:", a.size() - counters[node].size())
-            counter_changed = not (a == counters[node])
-            # if counter_changed:
-                # last_update[node] = t + 1
+            for successor in nodes_map[node]:
+                changed += (a.union(counters[successor]) > 0)
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
-            stop = stop and not counter_changed
-
-        # Update counters
-        print(last_update)
+        writer.add_scalar(f'changes', changed, t)
+        if changed == 0:
+            break
         for node in nodes:
-            # if last_update[node] == t + 1:
-            counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
+            counters[node].load(
+                get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
 
-    # # for node in nodes:
-    # #     print(node, ": ", counters[node].size())
+    writer.close()
+    # for node in nodes:
+    #     print(node, ": ", counters[node].size())
