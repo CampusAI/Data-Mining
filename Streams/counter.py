@@ -36,7 +36,10 @@ class Counter:
     def union(self, count):
         """Union of self and another counter (side-effects self.M)
         """
-        self.M = np.maximum(self.M, count.M)
+        indices = np.where(count.M > self.M)
+        if indices[0].shape[0] > 0:
+            self.M[indices[0]] = count.M[indices[0]]
+        return indices[0].shape[0]
 
     def size(self):
         # m = self.M[self.M > -np.inf]  # Remove - infinity

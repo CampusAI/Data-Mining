@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from counter import Counter
 
+
 def get_file(graph_file, radius, node):
     filename = ""
     filename += graph_file.split(".")[0]
@@ -15,6 +16,7 @@ def get_file(graph_file, radius, node):
     filename += str(node)
     return filename
 
+
 if __name__ == "__main__":
     experiment_name = "test"
     graph_file = "datasets/citations.csv"
@@ -22,26 +24,30 @@ if __name__ == "__main__":
     writer = SummaryWriter()
 
     nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
-    
+    nodes_map = {}
+
     b = 5
     counters = {}
-    for node in nodes:
+    for node in tqdm(nodes):
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
+        nodes_map[node] = [row['dest'] for _, row in graph.loc[graph['ori'] == node].iterrows()]
 
     stop = False
     t = 0
     while not stop:
-        stop = True
+        stop = False
         print("t: ", t)
-        for node in tqdm(nodes):
+        changed = 0
+        for node in tqdm(nodes_map):
             a = copy.deepcopy(counters[node])
-            for _, row in graph.loc[graph['ori'] == node].iterrows():
-                a.union(counters[row['dest']])
-            # print("- node:", node, ", elems:", a.size() - counters[node].size())
+            for successor in nodes_map[node]:
+                changed += a.union(counters[successor])
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
-            stop = stop and (a == counters[node])
+        print(f'Changed in this iteration {changed}')
+        if changed == 0:
+            break
         # Update counters
         for node in nodes:
             counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
