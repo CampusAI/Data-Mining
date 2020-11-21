@@ -18,9 +18,12 @@ def get_file(graph_file, radius, node):
 
 
 if __name__ == "__main__":
-    experiment_name = "test"
-    graph_file = "datasets/citations.csv"
+    experiment_name = "test_emails"
+    # graph_file = "datasets/citations.csv"
+    # graph_file = "datasets/graph.csv"
+    graph_file = "datasets/emails.csv"
     graph = pd.read_csv(graph_file, sep="\t", names=['ori', 'dest'])
+    print(graph)
     writer = SummaryWriter()
 
     nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
@@ -36,6 +39,7 @@ if __name__ == "__main__":
             row['dest']
             for _, row in graph.loc[graph['ori'] == node].iterrows()
         ]
+    print(nodes_map)
 
     t = 0
     while True:
