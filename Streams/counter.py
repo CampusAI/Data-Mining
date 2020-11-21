@@ -1,3 +1,6 @@
+import os
+import pathlib
+
 from hashlib import md5
 import numpy as np
 import random
@@ -33,6 +36,13 @@ class Counter:
         # m = self.M[self.M > -np.inf]  # Remove - infinity
         Z = np.sum(np.power(2, -self.M))**-1
         return self.alpha_p*Z*(self.p**2)
+
+    def save(self, file):
+        pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
+        np.save(file, self.M)
+    
+    def load(self, file):
+        self.M = np.load(file)
 
 def jhash(x):
     h = unpack("<IIII",md5(x).digest())[0]
