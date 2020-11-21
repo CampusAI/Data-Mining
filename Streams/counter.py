@@ -7,14 +7,16 @@ import random
 from scipy.integrate import quad
 from struct import unpack
 
+
 class Counter:
+
     def __init__(self, b):
         self.b = b
         self.p = 2**b
         # self.M = -np.ones(self.p)*np.inf
-        self.M = -np.zeros(self.p)
+        self.M = np.zeros(self.p)
         self.bin_repr_len = 32
-        
+
         # Compute alpha
         def integrand(u):
             return (np.log2((2 + u)/(1 + u)))**self.p
@@ -25,7 +27,10 @@ class Counter:
         i = int(bin_representation[:self.b], 2)  # Position
         p_plus = bin_representation[self.b:].find("1") + 1  # Leading zeros
         p_plus = self.bin_repr_len - self.b + 1 if p_plus == 0 else p_plus
-        self.M[i] = max(self.M[i], p_plus)
+        if self.M[i] < p_plus:
+            self.M[i] = p_plus
+            return True
+        return False
 
     def hash_add(self, elem):
         # Hash value
@@ -50,13 +55,14 @@ class Counter:
         self.M = np.load(file)
 
 
-
 if __name__ == "__main__":
     b = 5
     counter = Counter(b=b)
 
     num_dif_values = 100
-    elems = np.array(list(set([random.randint(0, 2**32-1) for _ in range(num_dif_values)])), dtype=np.int32)
+    elems = np.array(list(set(
+        [random.randint(0, 2**32-1) for _ in range(num_dif_values)])
+    ), dtype=np.int32)
     num_dif_values = len(elems)
 
     iterations = 100000
