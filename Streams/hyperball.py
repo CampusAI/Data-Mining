@@ -32,25 +32,27 @@ if __name__ == "__main__":
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
-        nodes_map[node] = [row['dest'] for _, row in graph.loc[graph['ori'] == node].iterrows()]
+        nodes_map[node] = [
+            row['dest']
+            for _, row in graph.loc[graph['ori'] == node].iterrows()
+        ]
 
-    stop = False
     t = 0
-    while not stop:
-        stop = False
+    while True:
         print("t: ", t)
         changed = 0
         for node in tqdm(nodes_map):
             a = copy.deepcopy(counters[node])
             for successor in nodes_map[node]:
-                changed += a.union(counters[successor])
+                changed += (a.union(counters[successor]) > 0)
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
-        print(f'Changed in this iteration {changed}')
+        writer.add_scalar(f'changes', changed, t)
         if changed == 0:
             break
         # Update counters
         for node in nodes:
-            counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
+            counters[node].load(
+                get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
 
     writer.close()
