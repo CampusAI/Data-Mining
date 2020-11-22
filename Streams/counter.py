@@ -44,7 +44,16 @@ class Counter:
     def size(self):
         # m = self.M[self.M > -np.inf]  # Remove - infinity
         Z = np.sum(np.power(2, -self.M))**-1
-        return self.alpha_p*Z*(self.p**2)
+        E = self.alpha_p*Z*(self.p**2)
+        E_star = E
+        if E <= 5.*self.p/2.:
+            v = np.count_nonzero(self.M == 0)
+            if v != 0:
+                E_star = self.p * np.log(self.p/v)
+        elif E > (2**32)/30:
+            E_star = - (2*32) * np.log(1 - E/(2**32))
+        return E_star
+
 
     def save(self, file):
         pathlib.Path(os.path.dirname(file)).mkdir(parents=True, exist_ok=True)
@@ -63,13 +72,13 @@ if __name__ == "__main__":
     b = 5
     counter = Counter(b=b)
 
-    num_dif_values = 100
+    num_dif_values = 10
     elems = np.array(list(set(
         [random.randint(0, 2**32-1) for _ in range(num_dif_values)])
     ), dtype=np.int32)
     num_dif_values = len(elems)
 
-    iterations = 100000
+    iterations = 15
     for _ in range(iterations):
         elem = np.random.choice(elems)
         counter.hash_add(elem=elem)
