@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from counter import Counter
+import loader
 
 
 def get_file(graph_file, radius, node):
@@ -17,19 +18,15 @@ def get_file(graph_file, radius, node):
 
 
 if __name__ == "__main__":
-    graph_file = "datasets/citations.csv"
-    graph = pd.read_csv(graph_file, sep="\t", names=['ori', 'dest'])
-
-    nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
-    nodes_map = {}
+    graph_file = "datasets/emails.csv"
+    graph = loader.load_graph(graph_file)
 
     b = 5
     counters = {}
-    for node in tqdm(nodes):
+    for node in tqdm(graph):
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
-        nodes_map[node] = [row['dest'] for _, row in graph.loc[graph['ori'] == node].iterrows()]
 
     stop = False
     t = 0
@@ -37,15 +34,15 @@ if __name__ == "__main__":
         stop = False
         print("t: ", t)
         changed = 0
-        for node in tqdm(nodes_map):
+        for node in tqdm(graph):
             a = copy.deepcopy(counters[node])
-            for successor in nodes_map[node]:
+            for successor in graph[node]:
                 changed += a.union(counters[successor])
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
         print(f'Changed in this iteration {changed}')
         if changed == 0:
             break
         # Update counters
-        for node in nodes:
+        for node in graph:
             counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
