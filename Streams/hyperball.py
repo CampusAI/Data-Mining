@@ -1,6 +1,7 @@
 import copy
 
 import pandas as pd
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from counter import Counter
@@ -20,6 +21,7 @@ def get_file(graph_file, radius, node):
 if __name__ == "__main__":
     graph_file = "datasets/emails.csv"
     graph = loader.load_graph(graph_file)
+    writer = SummaryWriter()
 
     b = 5
     counters = {}
@@ -28,10 +30,8 @@ if __name__ == "__main__":
         counter.hash_add(node)
         counters[node] = counter
 
-    stop = False
     t = 0
-    while not stop:
-        stop = False
+    while True:
         print("t: ", t)
         changed = 0
         for node in tqdm(graph):
@@ -39,10 +39,14 @@ if __name__ == "__main__":
             for successor in graph[node]:
                 changed += a.union(counters[successor])
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
-        print(f'Changed in this iteration {changed}')
+        writer.add_scalar(f'changes', changed, t)
         if changed == 0:
             break
         # Update counters
         for node in graph:
             counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
+
+    writer.close()
+    # for node in nodes:
+    #     print(node, ": ", counters[node].size())
