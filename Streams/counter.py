@@ -72,16 +72,19 @@ if __name__ == "__main__":
     b = 5
     counter = Counter(b=b)
 
-    num_dif_values = 10
+    num_dif_values = 50
     elems = np.array(list(set(
         [random.randint(0, 2**32-1) for _ in range(num_dif_values)])
     ), dtype=np.int32)
     num_dif_values = len(elems)
 
-    iterations = 15
+    iterations = 150000
     for _ in range(iterations):
         elem = np.random.choice(elems)
         counter.hash_add(elem=elem)
 
+    approx_size = counter.size()
     print("Real diff values: ", num_dif_values)
-    print("Approx diff values: ", counter.size())
+    print("Approx diff values: ", approx_size)
+    print("Obtained Relative Error:", 100.*abs(approx_size - num_dif_values)/num_dif_values, "%")
+    print("Expected Relative Error:", 100.*1.04/np.sqrt(counter.p), "%")
