@@ -10,6 +10,8 @@ from struct import unpack
 
 class Counter:
 
+    DEFAULT_REGISTERS = 5
+
     def __init__(self, b):
         self.b = b
         self.p = 2**b
@@ -43,7 +45,7 @@ class Counter:
 
     def size(self):
         # m = self.M[self.M > -np.inf]  # Remove - infinity
-        Z = np.sum(np.power(2, -self.M))**-1
+        Z = 1. / np.sum(np.power(2, -self.M))
         E = self.alpha_p*Z*(self.p**2)
         E_star = E
         if E <= 5.*self.p/2.:
@@ -51,7 +53,7 @@ class Counter:
             if v != 0:
                 E_star = self.p * np.log(self.p/v)
         elif E > (2**32)/30:
-            E_star = - (2*32) * np.log(1 - E/(2**32))
+            E_star = - (2**32) * np.log(1 - E/(2**32))
         return E_star
 
 
