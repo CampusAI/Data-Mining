@@ -5,6 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from counter import Counter
+import loader
 
 
 def get_file(graph_file, radius, node):
@@ -18,45 +19,32 @@ def get_file(graph_file, radius, node):
 
 
 if __name__ == "__main__":
-    experiment_name = "test_emails"
-    # graph_file = "datasets/citations.csv"
-    # graph_file = "datasets/graph.csv"
     graph_file = "datasets/emails.csv"
-    graph = pd.read_csv(graph_file, sep="\t", names=['ori', 'dest'])
-    print(graph)
+    graph = loader.load_graph(graph_file)
     writer = SummaryWriter()
-
-    nodes = pd.unique(graph[['ori', 'dest']].values.ravel('K'))
-    nodes_map = {}
 
     b = 5
     counters = {}
-    for node in tqdm(nodes):
+    for node in tqdm(graph):
         counter = Counter(b=b)
         counter.hash_add(node)
         counters[node] = counter
-        nodes_map[node] = [
-            row['dest']
-            for _, row in graph.loc[graph['ori'] == node].iterrows()
-        ]
-    print(nodes_map)
 
     t = 0
     while True:
         print("t: ", t)
         changed = 0
-        for node in tqdm(nodes_map):
+        for node in tqdm(graph):
             a = copy.deepcopy(counters[node])
-            for successor in nodes_map[node]:
-                changed += (a.union(counters[successor]) > 0)
+            for successor in graph[node]:
+                changed += a.union(counters[successor])
             a.save(get_file(graph_file=graph_file, radius=t, node=node))
         writer.add_scalar(f'changes', changed, t)
         if changed == 0:
             break
         # Update counters
-        for node in nodes:
-            counters[node].load(
-                get_file(graph_file=graph_file, radius=t, node=node))
+        for node in graph:
+            counters[node].load(get_file(graph_file=graph_file, radius=t, node=node))
         t += 1
 
     writer.close()
