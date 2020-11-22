@@ -35,4 +35,4 @@ def compute_centralities(graph_file, sphere_dir):
 
 
 if __name__ == '__main__':
-    compute_centralities(graph_file='datasets/emails.csv', sphere_dir='datasets/emails/')
+    centralities = compute_centralities(graph_file='datasets/emails.csv', sphere_dir='datasets/emails/')

@@ -20,7 +20,7 @@ def get_file(graph_file, radius, node):
 
 if __name__ == "__main__":
     graph_file = "datasets/emails.csv"
-    graph = loader.load_graph(graph_file)
+    graph = loader.load_graph(graph_file, transpose=True)
     writer = SummaryWriter()
 
     b = 5
