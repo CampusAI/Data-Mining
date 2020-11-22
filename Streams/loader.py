@@ -21,6 +21,6 @@ def load_graph(path, transpose=False):
 
 
 def load_sphere(dir, radius, node):
-    c = counter.Counter(b=5)
+    c = counter.Counter(b=counter.Counter.DEFAULT_REGISTERS)
     c.load(os.path.join(dir, str(radius), str(node)))
     return c

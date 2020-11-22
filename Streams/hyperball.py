@@ -23,7 +23,7 @@ if __name__ == "__main__":
     graph = loader.load_graph(graph_file, transpose=True)
     writer = SummaryWriter()
 
-    b = 5
+    b = Counter.DEFAULT_REGISTERS
     counters = {}
     for node in tqdm(graph):
         counter = Counter(b=b)
@@ -48,5 +48,3 @@ if __name__ == "__main__":
         t += 1
 
     writer.close()
-    # for node in nodes:
-    #     print(node, ": ", counters[node].size())
