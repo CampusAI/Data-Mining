@@ -21,18 +21,19 @@ def compute_centralities(graph_file, sphere_dir):
             t_next_size = counter_t_next.size()
             sum_distance[node] += float(t) * (t_next_size - t_size)
             sum_reciprocal[node] += 1./t * (t_next_size - t_size)
-            if t == max_t - 1:
-                coreachable[node] = float(t_next_size)
+            coreachable[node] += t_next_size - t_size
 
-    closeness_centralities = {node: 1. / sum_distance[node] for node in graph}
-    lin_centralities = {node: coreachable[node] / sum_distance[node] for node in graph}
+    closeness_centralities = {
+        node: coreachable[node] / sum_distance[node] if sum_distance[node] > 0 else 0
+        for node in graph
+    }
+    lin_centralities = {  # If sum_distance[node] = 0 then coreachable[node] = 0
+        node: coreachable[node]**2 / sum_distance[node] if sum_distance[node] > 0 else 1
+        for node in graph
+    }
     harmonic_centralities = sum_reciprocal
     return {
         'closeness_centrality': closeness_centralities,
         'lin_centrality': lin_centralities,
-        'harmonic_centralities': harmonic_centralities
+        'harmonic_centrality': harmonic_centralities
     }
-
-
-if __name__ == '__main__':
-    centralities = compute_centralities(graph_file='datasets/emails.csv', sphere_dir='datasets/emails/')
