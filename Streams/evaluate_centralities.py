@@ -6,6 +6,7 @@ import pandas as pd
 from centrality import compute_centralities
 import loader
 
+plt.style.use('ggplot')
 
 EPS_ = 1e-5
 
@@ -36,14 +37,51 @@ def get_MAPE(approx, ground_truth):
     return 100. * error / n
 
 
-def plot_centralities(ground_truth, approx, title):
+def plot_centralities(ground_truth, approx, title, ylabel):
     sorted_keys = sorted(ground_truth.keys(), key=lambda k: ground_truth[k], reverse=True)
     x_axis = range(len(sorted_keys))
     plt.plot(x_axis, [ground_truth[k] for k in sorted_keys], label='Ground truth')
     plt.plot(x_axis, [approx[k] for k in sorted_keys], label='Approximate')
-    plt.legend()
-    plt.title(title)
+    plt.legend(fontsize=25)
+    plt.title(title, fontsize=30)
+    plt.xlabel('Nodes', fontsize=22)
+    plt.ylabel(ylabel, fontsize=22)
     plt.show()
+
+
+def compute_sorting_stats(closeness_gt, harmonic_gt, closeness_approx, harmonic_approx,
+                          top_percent=5):
+    # Sorting the keys of each dictionary by
+    sorted_closeness_gt_keys = sorted(closeness_gt.keys(), key=lambda k: closeness_gt[k])
+    sorted_harmonic_gt_keys = sorted(harmonic_gt.keys(), key=lambda k: harmonic_gt[k])
+    sorted_closeness_approx_keys = sorted(closeness_approx.keys(), key=lambda k: closeness_approx[k])
+    sorted_harmonic_approx_keys = sorted(harmonic_approx.keys(), key=lambda k: harmonic_approx[k])
+
+    mse_closeness = 0.
+    for i, k in enumerate(sorted_closeness_gt_keys):
+        mse_closeness += abs(i - sorted_closeness_approx_keys.index(k))
+    mse_closeness /= len(sorted_closeness_gt_keys)
+
+    mse_harmonic = 0.
+    for i, k in enumerate(sorted_harmonic_gt_keys):
+        mse_harmonic += abs(i - sorted_harmonic_approx_keys.index(k))
+    mse_harmonic /= len(harmonic_gt)
+
+    n = len(sorted_closeness_gt_keys)
+    top_percent = int(n * top_percent / 100)
+    top_percent_closeness_gt = set(sorted_closeness_gt_keys[:top_percent])
+    top_percent_harmonic_gt = set(sorted_harmonic_gt_keys[:top_percent])
+    top_percent_closeness_approx = set(sorted_closeness_approx_keys[:top_percent])
+    top_percent_harmonic_approx = set(sorted_harmonic_approx_keys[:top_percent])
+
+    closeness_intersect = top_percent_closeness_gt.intersection(top_percent_closeness_approx)
+    closeness_union = top_percent_closeness_gt.union(top_percent_closeness_approx)
+    harmonic_intersect = top_percent_harmonic_gt.intersection(top_percent_harmonic_approx)
+    harmonic_union = top_percent_harmonic_gt.union(top_percent_harmonic_approx)
+    closeness_jaccard = len(closeness_intersect) / len(closeness_union)
+    harmonic_jaccard = len(harmonic_intersect) / len(harmonic_union)
+
+    return mse_closeness, mse_harmonic, closeness_jaccard, harmonic_jaccard
 
 
 if __name__ == "__main__":
@@ -65,9 +103,9 @@ if __name__ == "__main__":
     print("DONE")
 
     plot_centralities(closeness_cent_gt, approx_centralities['closeness_centrality'],
-                      'Closeness centrality')
+                      'Closeness centrality', ylabel='Closeness centrality')
     plot_centralities(harmonic_cent_gt, approx_centralities['harmonic_centrality'],
-                      'Harmonic centrality')
+                      'Harmonic centrality', ylabel='Harmonic centrality')
 
     # Compute errors
     closeness_error = get_MAPE(approx=approx_centralities["closeness_centrality"],
@@ -78,3 +116,16 @@ if __name__ == "__main__":
     harmonic_error = get_MAPE(approx=approx_centralities["harmonic_centrality"],
                               ground_truth=harmonic_cent_gt)
     print("harmonic_error:", harmonic_error, "%")
+
+    mse_closeness, mse_harmonic, closeness_jac, harmonic_jac = compute_sorting_stats(
+        closeness_gt=closeness_cent_gt,
+        harmonic_gt=harmonic_cent_gt,
+        closeness_approx=approx_centralities['closeness_centrality'],
+        harmonic_approx=approx_centralities['harmonic_centrality'],
+        top_percent=10
+    )
+
+    print('MSE sorting closeness: ' + str(mse_closeness))
+    print('MSE sorting harmonic: ' + str(mse_harmonic))
+    print('Jaccard closeness: ' + str(closeness_jac))
+    print('Jaccard harmonic: ' + str(harmonic_jac))
