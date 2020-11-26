@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import numpy as np
 from scipy.stats import truncnorm
 
@@ -78,6 +79,5 @@ def plot_clusters(points, labels, low=0, high=1):
 
 
 if __name__ == '__main__':
-    from matplotlib import pyplot as plt
     points_, labels_ = load_fake_data(dims=2)
     plot_clusters(points_, labels_)
