@@ -30,7 +30,10 @@ def load_fake_data(dims, cluster_means=None, cluster_stds=0.05, low=0.,
     if seed is not None:
         np.random.seed(seed)
     if cluster_means is None:
-        n_clusters = np.random.randint(n_clusters[0], n_clusters[1])
+        if n_clusters[0] == n_clusters[1]:
+            n_clusters = n_clusters[0]
+        else:
+            n_clusters = np.random.randint(n_clusters[0], n_clusters[1])
         cluster_means = low + np.random.random((n_clusters, dims)) * (high - low)
     else:
         n_clusters = cluster_means.shape[0]
@@ -70,10 +73,8 @@ def plot_clusters(points, labels, low=0, high=1):
         high (float): Upper bound of the plot axis.
     """
     for label in np.unique(labels):
-        cluster_points_ = points[labels == label]
-        plt.scatter(cluster_points_[:, 0], cluster_points_[:, 1], label=f'Cluster {label}')
-    plt.xlim((low, high))
-    plt.ylim((low, high))
+        cluster_points = points[labels == label]
+        plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {label}')
     plt.legend()
     plt.show()
 
