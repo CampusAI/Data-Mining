@@ -37,19 +37,6 @@ def get_adjacency(data, method, epsilon=0.1, sigma=1.):
         return fully_connected_adjacency(data, sigma=sigma)
 
 
-def get_sym_norm_laplacian(D, A):
-    res = np.zeros((D.shape[0], D.shape[0]))
-    for i in range(D.shape[0]):
-        for j in range(D.shape[0]):
-            if i == j and D[i, i] != 0.:
-                res[i, j] = 1.
-            elif i != j and A[i, j] != 0.:
-                res[i, j] = -1. / np.sqrt(D[i, i] * D[j, j])
-            else:
-                res[i, j] = 0.
-    return res
-
-
 def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
                      normalize_laplacian=False):
     """Perfomr spectral clustering on the data for the given number of clusters.
@@ -68,33 +55,34 @@ def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
     """
     # 1. Affinity matrix
     A = get_adjacency(data=data, method=method, epsilon=epsilon, sigma=sigma)
+    np.fill_diagonal(A, 0)
 
     # 2. L matrix
-    D = np.diag(np.sum(A, axis=0))
-    if normalize_laplacian:
-        L = get_sym_norm_laplacian(D, A)
-    else:
-        L = D - A
+    D_root_inv = np.diag(np.power(np.sum(A, axis=0), -0.5))  # Compute Diagonal matrix D^-0.5
+    L = np.dot(np.dot(D_root_inv, A), D_root_inv)
 
     # 3. Get k-largest eigenvals
     eigen_vals, eigen_vecs = np.linalg.eig(L)
-    eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]]  # Sort by eigen_val descending
+    # print("eigen_vals", np.round(eigen_vals[(-eigen_vals).argsort()], decimals=3))
+    eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]] # Sort by eigen_val descending
 
     # 4. Normalize rows
     eigen_vecs = eigen_vecs / np.linalg.norm(eigen_vecs, axis=1)[:, None]
-
+    
     # 5. Clustering
     kmeans = cluster.KMeans(n_clusters=k)
     labels = kmeans.fit(eigen_vecs).labels_
+    # plt.scatter(eigen_vecs[:, 0], eigen_vecs[:, 1], c=labels)
+    # plt.show()
     return labels
 
 
 if __name__ == "__main__":
-    data, real_labels = load_fake_data(dims=2, points_per_cluster=(15, 40), n_clusters=(3, 10))
+    data, real_labels = load_fake_data(dims=2, points_per_cluster=(10, 50), n_clusters=(4, 6), seed=3)
     k = np.unique(real_labels).shape[0]
 
     guessed_labels = spectral_cluster(data=data, k=k, method='epsilon-ball', sigma=1.,
-                                      normalize_laplacian=False)
+                                      normalize_laplacian=True)
 
     plot_clusters(data, guessed_labels)
 
