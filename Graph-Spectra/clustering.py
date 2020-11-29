@@ -64,7 +64,7 @@ def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
 
     # 3. Get k-largest eigenvals
     eigen_vals, eigen_vecs = np.linalg.eig(L)
-    eigen_vecs = eigen_vecs[:, (eigen_vals).argsort()[:k]]  # Sort by eigen_val descending
+    eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]]  # Sort by eigen_val descending
 
     # 4. Normalize rows
     eigen_vecs = eigen_vecs / np.linalg.norm(eigen_vecs, axis=1)[:, None]
