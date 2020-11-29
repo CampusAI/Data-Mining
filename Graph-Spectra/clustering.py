@@ -31,45 +31,37 @@ def knn_adjacency(data, k):
 
 
 def get_adjacency(data, method, epsilon=0.1, sigma=1.):
+    """ method (str): 'fully-connected' or 'epsilon-ball'.
+    """
     if method == 'epsilon-ball':
         return epsilon_ball_adjacency(data, epsilon=epsilon)
     elif method == 'fully-connected':
         return fully_connected_adjacency(data, sigma=sigma)
 
 
-def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
-                     normalize_laplacian=False):
-    """Perfomr spectral clustering on the data for the given number of clusters.
+def spectral_cluster(A, k):
+    """Perform spectral clustering on the data for the given number of clusters.
 
     Args:
-        data (numpy.ndarray): Numpy array of shape (N, d) with d being the dimensionality of
-            the points.
+        A (np.array(n, n)): Adjacency matrix
         k (int): Number of clusters.
-        method (str): 'fully-connected' or 'epsilon-ball'.
-        epsilon (float): Size of the epsilon ball if using 'epsilon-ball' method.
-        sigma (float): Value of sigma if using the 'fully-connected' method.
-        normalize_laplacian (bool): Whether to normalize the laplacian.
 
     Returns:
         labels (numpy.ndarray): A numpy array with the cluster assigment of each given point.
     """
-    # 1. Affinity matrix
-    A = get_adjacency(data=data, method=method, epsilon=epsilon, sigma=sigma)
-    np.fill_diagonal(A, 0)
-
-    # 2. L matrix
+    # 1. L matrix
     D_root_inv = np.diag(np.power(np.sum(A, axis=0), -0.5))  # Compute Diagonal matrix D^-0.5
     L = np.dot(np.dot(D_root_inv, A), D_root_inv)
 
-    # 3. Get k-largest eigenvals
+    # 2. Get k-largest eigenvals
     eigen_vals, eigen_vecs = np.linalg.eig(L)
     # print("eigen_vals", np.round(eigen_vals[(-eigen_vals).argsort()], decimals=3))
     eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]] # Sort by eigen_val descending
 
-    # 4. Normalize rows
+    # 3. Normalize rows
     eigen_vecs = eigen_vecs / np.linalg.norm(eigen_vecs, axis=1)[:, None]
     
-    # 5. Clustering
+    # 4. Clustering
     kmeans = cluster.KMeans(n_clusters=k)
     labels = kmeans.fit(eigen_vecs).labels_
     # plt.scatter(eigen_vecs[:, 0], eigen_vecs[:, 1], c=labels)
@@ -81,8 +73,12 @@ if __name__ == "__main__":
     data, real_labels = load_fake_data(dims=2, points_per_cluster=(10, 50), n_clusters=(4, 6), seed=3)
     k = np.unique(real_labels).shape[0]
 
-    guessed_labels = spectral_cluster(data=data, k=k, method='epsilon-ball', sigma=1.,
-                                      normalize_laplacian=True)
+    # Get adjacency matrix
+    A = get_adjacency(data=data, method='epsilon-ball', epsilon=epsilon, sigma=sigma)
+    np.fill_diagonal(A, 0)
+
+    # Guess labels
+    guessed_labels = spectral_cluster(A=A, k=k)
 
     plot_clusters(data, guessed_labels)
 
