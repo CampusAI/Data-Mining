@@ -8,7 +8,7 @@ from sklearn.cluster import SpectralClustering
 from clustering import spectral_cluster
 
 def read_graph(file):
-    connections = pd.read_csv(file, sep=None, names=['ori', 'dest'], engine="python")
+    connections = pd.read_csv(file, sep=None, names=['ori', 'dest', 'weight'], engine="python")
     graph = nx.from_pandas_edgelist(connections, source='ori', target='dest') 
     # nx.draw(graph)
     # plt.show()
@@ -16,8 +16,7 @@ def read_graph(file):
 
 
 if __name__=="__main__":
-    path = "/home/oleguer/Documents/p6/Data-Mining/Graph-Spectra/"
-    graph = read_graph(path + "datasets/example1.dat")
+    graph = read_graph("datasets/example1.dat")
     k = 4
 
     # Get adjacency matrix
