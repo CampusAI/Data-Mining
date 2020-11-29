@@ -8,7 +8,7 @@ from sklearn.cluster import SpectralClustering
 from clustering import spectral_cluster
 
 def read_graph(file):
-    connections = pd.read_csv(file, sep=None, names=['ori', 'dest'])
+    connections = pd.read_csv(file, sep=None, names=['ori', 'dest'], engine="python")
     graph = nx.from_pandas_edgelist(connections, source='ori', target='dest') 
     # nx.draw(graph)
     # plt.show()
@@ -30,6 +30,7 @@ if __name__=="__main__":
 
     # Run sklearn spectral clustering for comparison
     clustering = SpectralClustering(n_clusters=4,
+                                    affinity='precomputed',
                                     random_state=0).fit(A)
     sklearn_labels = clustering.labels_
 
