@@ -52,6 +52,20 @@ def get_sym_norm_laplacian(D, A):
 
 def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
                      normalize_laplacian=False):
+    """Perfomr spectral clustering on the data for the given number of clusters.
+
+    Args:
+        data (numpy.ndarray): Numpy array of shape (N, d) with d being the dimensionality of
+            the points.
+        k (int): Number of clusters.
+        method (str): 'fully-connected' or 'epsilon-ball'.
+        epsilon (float): Size of the epsilon ball if using 'epsilon-ball' method.
+        sigma (float): Value of sigma if using the 'fully-connected' method.
+        normalize_laplacian (bool): Whether to normalize the laplacian.
+
+    Returns:
+        labels (numpy.ndarray): A numpy array with the cluster assigment of each given point.
+    """
     # 1. Affinity matrix
     A = get_adjacency(data=data, method=method, epsilon=epsilon, sigma=sigma)
 
@@ -64,7 +78,7 @@ def spectral_cluster(data, k, method='fully-connected', epsilon=0.1, sigma=1.,
 
     # 3. Get k-largest eigenvals
     eigen_vals, eigen_vecs = np.linalg.eig(L)
-    eigen_vecs = eigen_vecs[:, (eigen_vals).argsort()[:k]]  # Sort by eigen_val descending
+    eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]]  # Sort by eigen_val descending
 
     # 4. Normalize rows
     eigen_vecs = eigen_vecs / np.linalg.norm(eigen_vecs, axis=1)[:, None]
@@ -79,8 +93,8 @@ if __name__ == "__main__":
     data, real_labels = load_fake_data(dims=2, points_per_cluster=(15, 40), n_clusters=(3, 10))
     k = np.unique(real_labels).shape[0]
 
-    guessed_labels = spectral_cluster(data=data, k=k, method='fully-connected', sigma=1.,
-                                      normalize_laplacian=True)
+    guessed_labels = spectral_cluster(data=data, k=k, method='epsilon-ball', sigma=1.,
+                                      normalize_laplacian=False)
 
     plot_clusters(data, guessed_labels)
 
