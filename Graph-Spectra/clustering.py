@@ -39,28 +39,45 @@ def get_adjacency(data, method, epsilon=0.1, sigma=1.):
         return fully_connected_adjacency(data, sigma=sigma)
 
 
-def spectral_cluster(A, k):
+def spectral_cluster(A, k, plot_adjacency=False, plot_eigvals=False):
     """Perform spectral clustering on the data for the given number of clusters.
 
     Args:
         A (np.array(n, n)): Adjacency matrix
         k (int): Number of clusters.
+        plot_adjacency (bool): Whether to plot the adjacency matrix.
+        plot_eigvals (bool): Whether to plot the eigenvalues.
 
     Returns:
         labels (numpy.ndarray): A numpy array with the cluster assigment of each given point.
     """
+    if plot_adjacency:
+        plt.matshow(A)
+        plt.show()
+
     # 1. L matrix
     D_root_inv = np.diag(np.power(np.sum(A, axis=0), -0.5))  # Compute Diagonal matrix D^-0.5
     L = np.dot(np.dot(D_root_inv, A), D_root_inv)
 
     # 2. Get k-largest eigenvals
     eigen_vals, eigen_vecs = np.linalg.eig(L)
+
     # print("eigen_vals", np.round(eigen_vals[(-eigen_vals).argsort()], decimals=3))
     eigen_vecs = eigen_vecs[:, (-eigen_vals).argsort()[:k]] # Sort by eigen_val descending
 
+    # Sort eigenvalues increasing and estimate number of clusters
+    eigen_vals.sort()
+    eigen_vals = eigen_vals[::-1]
+    print(f'Suggested number of clusters:')
+    print(f'    By eigenvalues count: {len([v for v in eigen_vals if v == 1.])}')
+    print(f'    By eigengap: {np.argmin(np.diff(eigen_vals)) + 1}')
+    if plot_eigvals:
+        plt.plot(range(eigen_vals.shape[0]), eigen_vals, 'o')
+        plt.show()
+
     # 3. Normalize rows
     eigen_vecs = eigen_vecs / np.linalg.norm(eigen_vecs, axis=1)[:, None]
-    
+
     # 4. Clustering
     kmeans = cluster.KMeans(n_clusters=k)
     labels = kmeans.fit(eigen_vecs).labels_
@@ -74,7 +91,7 @@ if __name__ == "__main__":
     k = np.unique(real_labels).shape[0]
 
     # Get adjacency matrix
-    A = get_adjacency(data=data, method='epsilon-ball', epsilon=epsilon, sigma=sigma)
+    A = get_adjacency(data=data, method='epsilon-ball')
     np.fill_diagonal(A, 0)
 
     # Guess labels

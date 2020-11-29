@@ -21,17 +21,23 @@ def connections_to_graph_dict(connections_array):
     return graph_dict
 
 
-def plot_graph(graph):
+def plot_graph(graph, labels=None):
+    """Plot the graph with different colors if labels are provided.
+
+    Args:
+        graph (networkx.Graph): A Graph object.
+        labels (dict): Dictionary where keys are node ids and values their cluster assignments.
+    """
+    if labels is not None:
+        unique_labels = set([v for _, v in labels.items()])
+        colors = np.arange(0, 1, 1. / len(unique_labels))
+        colors_list = [colors[labels[node]] for node in graph.nodes]
+    else:
+        colors_list = None
     pos = networkx.spring_layout(graph)
-    networkx.draw_networkx_nodes(graph, pos, cmap=plt.get_cmap('jet'), node_size=500)
+    networkx.draw_networkx_nodes(graph, pos, cmap=plt.get_cmap('jet'), node_color=colors_list,
+                                 node_size=500)
     networkx.draw_networkx_labels(graph, pos)
-    networkx.draw_networkx_edges(graph, pos, edgelist=graph_.edges, edge_color='r', arrows=True)
+    networkx.draw_networkx_edges(graph, pos, edgelist=graph.edges, edge_color='r', arrows=True)
     plt.show()
 
-
-if __name__ == '__main__':
-    connections_ = np.genfromtxt('datasets/example2.dat', delimiter=',')
-    graph_dict_ = connections_to_graph_dict(connections_)
-    graph_ = networkx.Graph(graph_dict_)
-
-    plot_graph(graph_)
