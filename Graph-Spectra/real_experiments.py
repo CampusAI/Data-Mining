@@ -18,17 +18,18 @@ def read_graph(file):
 if __name__=="__main__":
     path = "/home/oleguer/Documents/p6/Data-Mining/Graph-Spectra/"
     graph = read_graph(path + "datasets/example1.dat")
+    k = 4
 
     # Get adjacency matrix
-    A = nx.linalg.graphmatrix.adjacency_matrix(graph)
+    A = nx.linalg.graphmatrix.adjacency_matrix(graph).toarray()
     np.fill_diagonal(A, 0)
     plt.matshow(A)
     plt.show()
 
-    guessed_labels = spectral_cluster(A=A, k=5)
+    guessed_labels = spectral_cluster(A=A, k=4)
 
     # Run sklearn spectral clustering for comparison
-    clustering = SpectralClustering(n_clusters=2,
+    clustering = SpectralClustering(n_clusters=4,
                                     random_state=0).fit(A)
     sklearn_labels = clustering.labels_
 
